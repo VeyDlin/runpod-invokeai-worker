@@ -1,0 +1,6 @@
+runpod~=1.7.0
+pillow==11.1.0
+pydantic==2.10.5
+invokeai-python
+boto3
+pyyaml
