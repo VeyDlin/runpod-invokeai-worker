@@ -23,7 +23,7 @@ COPY src app
 COPY builder builder
 RUN --mount=type=cache,target=/root/.cache \
     chmod +x builder/install.sh && \
-    ./builder/install.sh
+    CONFIG_FILE=$CONFIG_FILE INVOKEAI_VERSION=$INVOKEAI_VERSION ./builder/install.sh
 
 
 # Clean up to reduce image size
