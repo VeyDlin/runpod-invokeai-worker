@@ -42,19 +42,25 @@ async def install_model(invoke: Invoke, path: str, temp: Path):
         return
     
     raise Exception("install_model WTF")
-    
 
 
-async def pip_install(pip_list: List[str], invoke_path: Path):
+def venv_command(path: Path, cmd: str):
+    activate_path = path / ".venv/bin/activate"
+    command = f"source {activate_path.resolve()} && {cmd}"
+    print(f"> {cmd}")
+    result = subprocess.run(command, shell=True, check=True, executable="/bin/bash")
+    print(result.stdout)
+
+
+def pip_requirements_install(path: Path, requirements_path: Path):
+    if os.path.exists(requirements_path):
+        venv_command(path, f"uv pip install -r {requirements_path.resolve()}")
+
+
+def pip_install(path: Path, pip_list: List[str]):
     pip_list = [pkg for pkg in [pkg.strip() for pkg in pip_list] if pkg]
-    if pip_list:  
-        pip_install_str = ' '.join(pip_list)
-        activate_path = invoke_path / ".venv/bin/activate"
-        command = f"source {activate_path.resolve()} && uv pip install {pip_install_str}"
-        print(f"> uv pip install {pip_install_str}")
-        result = subprocess.run(command, shell=True, check=True, executable="/bin/bash")
-        print(result.stdout)
-
+    if pip_list:
+        venv_command(path, f"uv pip install {' '.join(pip_list)}")
 
 
 async def install_nodes_git(repo_url: str, nodes_path: Path):
@@ -66,7 +72,6 @@ async def install_nodes_git(repo_url: str, nodes_path: Path):
 
     repo = git.Repo.clone_from(repo_url, target_path)
     print(f"Repository {repo_url} successfully cloned into {repo.working_tree_dir}")
-
 
 
 async def install(invoke: Invoke, invoke_path: Path, builder_path: Path, config: ConfigInstall): 
@@ -93,7 +98,7 @@ async def install(invoke: Invoke, invoke_path: Path, builder_path: Path, config:
 
     if config.pip_nodes:
         print("Install pip requirements for nodes")
-        await pip_install(config.pip_nodes, invoke_path)
+        pip_install(invoke_path, config.pip_nodes)
         print("All pip requirements installed")
 
     for repo_url in config.git_nodes:
@@ -106,9 +111,7 @@ async def install(invoke: Invoke, invoke_path: Path, builder_path: Path, config:
         for node in node_directories:
             requirements_path = nodes_path / node / "requirements.txt"
             if os.path.exists(requirements_path):
-                print(f"pip requirements for {node}")
-                with open(requirements_path, 'r', encoding='utf-8') as file:
-                    await pip_install(file.readlines(), invoke_path)
+                pip_requirements_install(invoke_path, requirements_path)
 
 
 
