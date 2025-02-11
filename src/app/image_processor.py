@@ -1,4 +1,3 @@
-# Path: app\image_processor.py
 import base64
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed

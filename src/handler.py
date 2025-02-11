@@ -1,24 +1,39 @@
-# Path: handler.py
 import os
 import asyncio
 import runpod
 import traceback
+import argparse
+from pathlib import Path
 from runpod import RunPodLogger
 from typing import List
-from pathlib import Path
 from invoke import Invoke
 from invoke.graph_builder.components import Batch, BatchRoot, Graph
 from invoke.api.images import Categories
 from app.schema import *
 from app.image_processor import ImageProcessor
-from app.invokeai import create_invokeai_yaml
+from app.invoke_manager import InvokeManager
 from concurrent.futures import ThreadPoolExecutor
 
 log = RunPodLogger()
 
 
-async def handler(task: JobTask) -> ResponseTask:
+async def handler(task: JobTask, invoke_path: Path) -> ResponseTask:
     async with Invoke() as invoke:
+        # Image file manager
+        log.debug("Create Invoke manager")
+        storage_path=os.environ.get('STORAGE_PATH', None)
+        manager = InvokeManager(
+            invoke_path=invoke_path,
+            storage_path=Path(storage_path) if storage_path else None
+        )
+
+        # Install requirements
+        if task.models or task.nodes:
+            await manager.install_models(task.models)
+            need_reload = await manager.install_nodes(task.nodes)
+            manager.save_db()
+
+
         # Image file manager
         log.debug("Create Image file manager")
         image_processor = ImageProcessor(
@@ -106,11 +121,16 @@ async def handler(task: JobTask) -> ResponseTask:
 
 def create_handler(job):
     try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--invoke", type=str, required=True)
+        args = parser.parse_args()
+
         log.info("Start job")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         with ThreadPoolExecutor() as executor:
             future = executor.submit(loop.run_until_complete, handler(
+                invoke_path=Path(args.invoke),
                 task=JobTask.model_validate(job['input'])
             ))
             response: ResponseTask = future.result()
@@ -128,18 +148,6 @@ def create_handler(job):
 
 async def setup():
     async with Invoke() as invoke:
-        invoke_path = Path("invokeai")
-        invokeai_yaml_path = invoke_path / "invokeai.yaml"
-
-        # Creating InvokeAI config
-        create_invokeai_yaml(
-            path=invokeai_yaml_path,
-            max_cache_ram_gb=os.environ.get('MAX_CACHE_RAM_GB', None),
-            max_cache_vram_gb=os.environ.get('MAX_CACHE_VRAM_GB', None),
-            enable_partial_loading=os.environ.get('ENABLE_PARTIAL_LOADING', None),
-        )
-
-        # Wait InvokeAI
         log.info("Wait InvokeAI...")
         version = await invoke.wait_invoke()
         log.info(f"version = {version}")

@@ -7,6 +7,10 @@ ARG CONFIG_FILE=config.user.yml
 ARG INVOKEAI_VERSION=5.6.0
 
 
+# Env
+ENV STORAGE_PATH=/runpod-volume
+
+
 # Set the working directory in the container
 WORKDIR /worker-app
 
@@ -23,7 +27,7 @@ COPY src app
 COPY builder builder
 RUN --mount=type=cache,target=/root/.cache \
     chmod +x builder/install.sh && \
-    CONFIG_FILE=$CONFIG_FILE INVOKEAI_VERSION=$INVOKEAI_VERSION ./builder/install.sh
+    INVOKEAI_VERSION=$INVOKEAI_VERSION ./builder/install.sh
 
 
 # Clean up to reduce image size

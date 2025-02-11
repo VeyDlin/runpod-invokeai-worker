@@ -1,5 +1,0 @@
-invokeai-python
-aiohttp
-gitpython
-requests
-pyyaml

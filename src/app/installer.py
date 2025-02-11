@@ -117,13 +117,17 @@ async def install(invoke: Invoke, invoke_path: Path, builder_path: Path, config:
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, required=True)
+    parser.add_argument("--config", type=str, required=False)
     parser.add_argument("--invoke", type=str, required=True)
     parser.add_argument("--builder", type=str, required=True)
     args = parser.parse_args()
     config = ConfigInstall(args.config)
     invoke_path = Path(args.invoke).resolve()
     builder_path = Path(args.builder).resolve()
+
+    if not args.config:
+        print("Config is not installed, skipping the installation")
+        return
 
     async with Invoke() as invoke:
         print(f"==== Install start ====")

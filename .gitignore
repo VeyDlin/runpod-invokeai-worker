@@ -1,7 +1,8 @@
-# Builder user data
+# User data
 builder/config.user.yml
 builder/config.yml
 builder/data/
+test/
 
 
 # Byte-compiled / optimized / DLL files

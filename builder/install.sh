@@ -42,24 +42,7 @@ source .venv/bin/activate
 uv pip install invokeai==$INVOKEAI_VERSION --python 3.11 --python-preference only-managed --force-reinstall --extra-index-url https://download.pytorch.org/whl/cu124
 
 # Run InvokeAI server in background
-invokeai-web --root "$INVOKEAI_PATH" > /dev/null 2>&1 &
-
-# Exit venv
-deactivate
-
-
-# ============ Build ============ #
-cd $BUILDER_PATH 
-
-# Install and activate venv
-uv venv --relocatable --python 3.11 --python-preference only-managed .venv
-source .venv/bin/activate
-
-# Install requirements
-uv pip install --python 3.11 --python-preference only-managed --force-reinstall -r $BUILDER_PATH/requirements-builder.txt
-
-# Run builder
-python installer.py --invoke "$INVOKEAI_PATH" --builder "$BUILDER_PATH" --config "$CONFIG_FILE"
+invokeai-web --root "$INVOKEAI_PATH" &
 
 # Exit venv
 deactivate
