@@ -122,28 +122,37 @@ async def handler(task: JobTask, invoke_path: Path) -> ResponseTask:
 
 
 def create_handler(job):
+    invoke_path = None
     try:
         parser = argparse.ArgumentParser()
         parser.add_argument("--invoke", type=str, required=True)
         args = parser.parse_args()
+        invoke_path=Path(args.invoke)
 
         log.info("Start job")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         with ThreadPoolExecutor() as executor:
             future = executor.submit(loop.run_until_complete, handler(
-                invoke_path=Path(args.invoke),
+                invoke_path=invoke_path,
                 task=JobTask.model_validate(job['input'])
             ))
             response: ResponseTask = future.result()
             log.info("Done")
             return response.model_dump()
     except Exception as e:
+        invokeai_log = None
+        if invoke_path:
+            invokeai_log_path = invoke_path / "invokeai.log"
+            if invokeai_log_path.exists():
+                invokeai_log = invokeai_log_path.read_text()
+
         return ResponseTask(
             error=str(e), 
             meta_data={
                 "error": str(e), 
-                "traceback": traceback.format_exc()
+                "traceback": traceback.format_exc(),
+                "invokeai_log": invokeai_log
             }
         ).model_dump()
         

@@ -38,5 +38,4 @@ RUN apt-get autoremove -y && \
 
 
 # Set invokeai and handler.py as the entry point
-ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["./app/start.sh"]

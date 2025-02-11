@@ -24,9 +24,6 @@ class InvokeManager:
         self.invoke_path = invoke_path.resolve()
         self.storage_path = storage_path.resolve()
 
-        os.makedirs(self.invoke_path, exist_ok=True)
-        os.makedirs(self.storage_path, exist_ok=True)
-        
         self.lock = StalePortaLock(self.storage_path, stale_threshold=60 * 10)
         self.lock.timeout = 30
 
@@ -35,6 +32,9 @@ class InvokeManager:
         self.models_path = (self.storage_path / "models")
         self.nodes_path = (self.storage_path / "nodes")
         self.download_cache_path = (self.storage_path / "download_cache")
+
+        os.makedirs(self.invoke_db_path, exist_ok=True)
+        os.makedirs(self.storage_db_path, exist_ok=True)
 
 
     async def install_models(self, models: Optional[List[ModelInfo]]):

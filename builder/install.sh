@@ -12,7 +12,7 @@ BUILDER_PATH=$WORKDIR_PATH/builder
 
 # Install required dependencies, Python 3.11, and associated tools
 apt-get update -y 
-apt-get install -y libglib2.0-0 libgl1-mesa-glx git python3.11 python3-pip python3.11-venv nano tini
+apt-get install -y libglib2.0-0 libgl1-mesa-glx git python3.11 python3-pip python3.11-venv nano
 
 # Set Python 3.11 as the default for python3 and python
 update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
