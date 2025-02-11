@@ -21,20 +21,20 @@ class InvokeManager:
         if not storage_path.is_dir():
             storage_path = invoke_path
 
-        self.invoke_path = invoke_path
-        self.storage_path = storage_path
+        self.invoke_path = invoke_path.resolve()
+        self.storage_path = storage_path.resolve()
 
-        os.makedirs(self.storage_db_path.resolve(), exist_ok=True)
-        os.makedirs(self.invoke_db_path.resolve(), exist_ok=True)
+        os.makedirs(self.invoke_path, exist_ok=True)
+        os.makedirs(self.storage_path, exist_ok=True)
         
-        self.lock = StalePortaLock(storage_path.resolve(), stale_threshold=60 * 10)
+        self.lock = StalePortaLock(self.storage_path, stale_threshold=60 * 10)
         self.lock.timeout = 30
 
-        self.invoke_db_path = (self.invoke_path / "databases").resolve()
-        self.storage_db_path = (self.storage_path / "databases").resolve()
-        self.models_path = (self.storage_path / "models").resolve()
-        self.nodes_path = (self.storage_path / "nodes").resolve()
-        self.download_cache_path = (self.storage_path / "download_cache").resolve()
+        self.invoke_db_path = (self.invoke_path / "databases")
+        self.storage_db_path = (self.storage_path / "databases")
+        self.models_path = (self.storage_path / "models")
+        self.nodes_path = (self.storage_path / "nodes")
+        self.download_cache_path = (self.storage_path / "download_cache")
 
 
     async def install_models(self, models: Optional[List[ModelInfo]]):
@@ -93,7 +93,7 @@ class InvokeManager:
                     requirements_path = target_path / "requirements.txt"
                     if requirements_path.exists():
                         activate_path = self.invoke_path / ".venv/bin/activate"
-                        command = f"source {activate_path.resolve()} && uv pip install -r {requirements_path.resolve()}"
+                        command = f"source {activate_path} && uv pip install -r {requirements_path}"
                         log.info(f"> {command}")
                         result = subprocess.run(command, shell=True, check=True, executable="/bin/bash")
                         log.log(result.stdout)
@@ -127,8 +127,8 @@ class InvokeManager:
         self.lock.acquire()
         try:
             # sync: storage -> invoke
-            storage_db_path = (self.storage_db_path / "invokeai.db").resolve()
-            invoke_db_path = (self.invoke_db_path / "invokeai.db").resolve()
+            storage_db_path = self.storage_db_path / "invokeai.db"
+            invoke_db_path = self.invoke_db_path / "invokeai.db"
             if storage_db_path.is_file():
                 log.info(f"Sync: storage ({storage_db_path}) -> invoke ({storage_db_path})")
                 shutil.copy2(storage_db_path, invoke_db_path)
@@ -143,8 +143,8 @@ class InvokeManager:
         self.lock.acquire()
         try:
             # sync: storage <- invoke
-            storage_db_path = (self.storage_db_path / "invokeai.db").resolve()
-            invoke_db_path = (self.invoke_db_path / "invokeai.db").resolve()
+            storage_db_path = self.storage_db_path / "invokeai.db"
+            invoke_db_path = self.invoke_db_path / "invokeai.db"
             log.info(f"Sync: storage ({storage_db_path}) <- invoke ({storage_db_path})")
             shutil.copy2(invoke_db_path, storage_db_path)
         finally:
@@ -158,7 +158,7 @@ class InvokeManager:
 
         if len(config) > 0:
             path: Path = self.invoke_path / "invokeai.yaml"
-            log.info(f"Set confog: {path.resolve()}")
+            log.info(f"Set confog: {path}")
             merged_config = {**base_config, **config}
-            with open(path.resolve(), "w") as yaml_file:
+            with open(path, "w") as yaml_file:
                 yaml.dump(merged_config, yaml_file, default_flow_style=False)

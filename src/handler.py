@@ -115,8 +115,10 @@ async def handler(task: JobTask, invoke_path: Path) -> ResponseTask:
         # Delete last generate images
         log.debug("Delete last generate images")
         await invoke.images.delete_by_list([item.image_name for item in last_images.items])
-
-        return out_images
+        
+        return ResponseTask(
+            images=out_images
+        )
 
 
 def create_handler(job):
