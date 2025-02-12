@@ -6,7 +6,6 @@ WORKDIR_PATH=$(pwd)
 INVOKEAI_PATH="$WORKDIR_PATH/invokeai"
 APP_PATH="$WORKDIR_PATH/app"
 VENV_APP="$APP_PATH/.venv/bin/activate"
-VENV_INVOKE="$INVOKEAI_PATH/.venv/bin/activate"
 
 log() {
     echo "[INFO] $1"
@@ -17,12 +16,12 @@ error() {
     exit 1
 }
 
-# Функция для завершения всех запущенных процессов
 cleanup() {
     log "Stopping all background processes..."
-    pkill -P $$  # Завершает все дочерние процессы текущего скрипта
+    pkill -P $$ 
 }
-trap cleanup EXIT  # Вызывает cleanup при выходе
+trap cleanup EXIT
+
 
 # ============ Preparation ============ #
 log "Starting preparation..."
@@ -43,27 +42,12 @@ python prep.py --invoke "$INVOKEAI_PATH" || error "prep.py failed"
 deactivate
 
 
-# ============ InvokeAI ============ #
-log "Starting InvokeAI..."
-cd "$INVOKEAI_PATH" || error "Failed to change directory to $INVOKEAI_PATH"
-
-# Activate venv
-if [ -f "$VENV_INVOKE" ]; then
-    source "$VENV_INVOKE"
-else
-    error "Virtual environment not found in $INVOKEAI_PATH"
-fi
-
-# Run InvokeAI
-invokeai-web --root "$INVOKEAI_PATH" > "$INVOKEAI_PATH/invokeai.log" 2>&1 &
-INVOKEAI_PID=$!
-
-# Exit venv
-deactivate
+# ============ Supervisor ============ #
+supervisord > /dev/null 2>&1 &
 
 
-# ============ Worker app ============ #
-log "Starting Worker App..."
+# ============ App ============ #
+log "Starting preparation..."
 cd "$APP_PATH" || error "Failed to change directory to $APP_PATH"
 
 # Activate venv
@@ -73,6 +57,9 @@ else
     error "Virtual environment not found in $APP_PATH"
 fi
 
-# Run Worker server
+# Run preparation script
 log "Running handler.py..."
-exec python handler.py --invoke "$INVOKEAI_PATH"
+python handler.py --invoke "$INVOKEAI_PATH" || error "handler.py failed"
+
+# Exit venv
+deactivate

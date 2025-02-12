@@ -3,6 +3,7 @@ import asyncio
 import runpod
 import traceback
 import argparse
+import subprocess
 from pathlib import Path
 from runpod import RunPodLogger
 from typing import List
@@ -32,7 +33,11 @@ async def handler(task: JobTask, invoke_path: Path) -> ResponseTask:
             await manager.install_models(task.models)
             need_reload = await manager.install_nodes(task.nodes)
             manager.save_db()
-
+            if need_reload:
+                log.info("Wait InvokeAI restart...")
+                subprocess.run(["supervisorctl", "restart", "invokeai"], check=True)
+                version = await invoke.wait_invoke()
+                log.info(f"version = {version}")
 
         # Image file manager
         log.debug("Create Image file manager")
@@ -87,7 +92,7 @@ async def handler(task: JobTask, invoke_path: Path) -> ResponseTask:
         log.debug("Run batch")
         batch_root = BatchRoot(batch=batch).model_dump_json()
         enqueue_batch = await invoke.queue.enqueue_batch(batch_root)
-        log.debug("Wait... batch")
+        log.debug("Wait batch...")
         await invoke.wait_batch(enqueue_batch)
 
         # Delete upload images

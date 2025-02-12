@@ -108,18 +108,16 @@ class InvokeManager:
         return self.invoke_path != self.storage_path
 
 
-    def init_config(self):
+    def init_config(self, user_config: Optional[Dict[str, Any]] = None):
         self._set_config({
             "db_dir": self.invoke_db_path.as_posix(),
             "models_dir": self.models_path.as_posix(),
             "custom_nodes_dir": self.nodes_path.as_posix(),
             "download_cache_dir": self.download_cache_path.as_posix()
-        })
+        }, user_config)
 
 
     def load_db(self):
-        self.init_config()
-
         if not self.is_storage_use():
             return
         
@@ -151,14 +149,16 @@ class InvokeManager:
             self.lock.release()
 
 
-    def _set_config(self, config: Dict[str, Any]):
+    def _set_config(self, config: Dict[str, Any], user_merge: Optional[Dict[str, Any]] = None):
         base_config = {
             "schema_version": "4.0.2"
         }
 
         if len(config) > 0:
             path: Path = self.invoke_path / "invokeai.yaml"
-            log.info(f"Set confog: {path}")
+            log.info(f"Set config: {path}")
             merged_config = {**base_config, **config}
+            if user_merge:
+                merged_config = {**merged_config, **user_merge}
             with open(path, "w") as yaml_file:
                 yaml.dump(merged_config, yaml_file, default_flow_style=False)

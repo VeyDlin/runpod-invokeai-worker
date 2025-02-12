@@ -1,7 +1,8 @@
 ## Builder ARG 
 ```
-CONFIG_FILE=url or local path
+STORAGE_PATH=/runpod-volume
 INVOKEAI_VERSION=5.6.0
+INVOKEAI_CONFIG={ "host": "0.0.0.0" }
 ```
 
 ## ENV
